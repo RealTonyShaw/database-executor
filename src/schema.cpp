@@ -9,6 +9,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
 
 using namespace std;
 
@@ -33,7 +34,7 @@ namespace badgerdb {
             tableName = result[1];
             attributeInitStatements = result[2];
         }
-        std::cout << "TableName: " << tableName << " Attributes: " << attributeInitStatements << std::endl;
+        // std::cout << "TableName: " << tableName << " Attributes: " << attributeInitStatements << std::endl;
         istringstream stringStream(attributeInitStatements);
         string tmpString;
         // attributeInit 保存每段属性初始化命令
@@ -42,7 +43,7 @@ namespace badgerdb {
         }
         // 分割每次 attributeInit 中的命令
         for (const auto& s : attributeInit) {
-            std::cout << s << std::endl;
+            // std::cout << s << std::endl;
             istringstream stringStreamTmp(s);
             string tmpString2;
             vector<string> value;
@@ -58,7 +59,7 @@ namespace badgerdb {
             int maxSize;
             DataType attrType;
             for (const auto& s2 : value) {
-                std::cout << s2 << std::endl;
+                // std::cout << s2 << std::endl;
                 if (s2 == "NOT") {
                     isNotNull = true;
                 }
@@ -89,6 +90,28 @@ namespace badgerdb {
 
     void TableSchema::print() const {
         // TODO
+        std::cout << "Table Name: " << this->tableName << std::endl;
+        std::cout << setw(10) << "Name" << setw(10) << "Type" << setw(10) << "Length" << setw(10) << std::endl;
+        for (auto& a : this->attrs) {
+            std::cout << setw(10) << a.attrName << setw(10) << TypeToString(a.attrType) << setw(10) << a.maxSize << std::endl;
+        }
+    }
+
+    std::string TableSchema::TypeToString(DataType dt) {
+        switch (dt) {
+            case INT:
+                return "INT";
+            case CHAR:
+                return "CHAR";
+            case VARCHAR:
+                return "VARCHAR";
+            default:
+                return "UNDEFINED";
+        }
+    }
+
+    std::string TableSchema::BoolToString(bool b) {
+        return b ? "True" : "False";
     }
 
 }  // namespace badgerdb

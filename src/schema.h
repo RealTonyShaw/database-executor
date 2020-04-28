@@ -218,6 +218,9 @@ class TableSchema {
    * Print the schema
    */
   void print() const;
+
+  static std::string TypeToString(DataType dt);
+  static std::string BoolToString(bool b);
 };
 
 }  // namespace badgerdb
