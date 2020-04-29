@@ -219,7 +219,18 @@ class TableSchema {
    */
   void print() const;
 
+  /**
+   * Convert DataType to String
+   * @param dt
+   * @return string
+   */
   static std::string TypeToString(DataType dt);
+
+  /**
+   * Convert Bool to String
+   * @param b
+   * @return string
+   */
   static std::string BoolToString(bool b);
 };
 

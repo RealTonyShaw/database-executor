@@ -35,5 +35,13 @@ class HeapFileManager {
    */
   static string createTupleFromSQLStatement(const string& sql,
                                             const Catalog* catalog);
+
+  /**
+   * Divide a given string by a character
+   * @param str original string
+   * @param div a char
+   * @param outcome the result of division
+   */
+  static void divideByChar(const string& str, char div, vector<string> &outcome);
 };
 }  // namespace badgerdb
