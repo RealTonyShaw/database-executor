@@ -43,5 +43,20 @@ class HeapFileManager {
    * @param outcome the result of division
    */
   static void divideByChar(const string& str, char div, vector<string> &outcome);
+
+  /**
+   * Calculate the size of a given content in database (multiply of 4)
+   * @param str content
+   * @return size
+   */
+  static int roundUpSize(const string& str);
+
+  /**
+   * Get the size of a tuple when it is stored in database
+   * @param catalog
+   * @param name table name
+   * @return size
+   */
+  int getSizeOfTuple(const Catalog *catalog, const string& name);
 };
 }  // namespace badgerdb
