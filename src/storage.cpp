@@ -31,6 +31,10 @@ namespace badgerdb {
             fileOfLastTime = &file;
             fileAssigned = true;
         }
+        if (fileOfLastTime != &file) {
+            fileOfLastTime = &file;
+            assigned = false;
+        }
         // TODO: 检查需要如何填充是更换了 file 文件（一个想法：使用 filename）
         if (!assigned) {
             // bufMgr->allocPage(fileOfRDB, pid, page);
@@ -68,8 +72,6 @@ namespace badgerdb {
         // Insert 语句段落划分
         string tableName;
         string attrInfo;
-        //
-        // char tuple[30];
         vector<unsigned char> tuple;
         // 如果是条 Insert 语句
         // TODO: 抛出一个不符合 Insert 语句的异常
@@ -115,13 +117,9 @@ namespace badgerdb {
                 }
             }
         }
-        char tupleOfCharType[tuple.size()];
+        char tupleOfCharType[tuple.size() + 1];
         convertVectorToArray(tuple, tupleOfCharType);
-        cout << "TUPLE: ";
-        for (char c: tupleOfCharType) {
-            cout << c;
-        }
-        cout << endl;
+        // cout << "Tuple Content: " << string(tupleOfCharType) << endl;
         return tupleOfCharType;
     }
 
@@ -175,5 +173,6 @@ namespace badgerdb {
         for (int i = 0; i < v.size(); i++) {
             array[i] = v[i];
         }
+        array[v.size()] = '\0';
     }
 }  // namespace badgerdb
