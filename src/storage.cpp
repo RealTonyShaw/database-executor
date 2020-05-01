@@ -60,13 +60,17 @@ namespace badgerdb {
     string HeapFileManager::createTupleFromSQLStatement(const string &sql,
                                                         const Catalog *catalog) {
         // TODO
+        // 正则匹配
         regex insertStatementPattern(R"(INSERT INTO (.+) VALUES \((.+)\);)");
         regex charPattern(R"([ ]*'(.*)')", regex::icase);
         regex intPattern(R"([ ]*(\d+))", regex::icase);
         smatch result;
+        // Insert 语句段落划分
         string tableName;
         string attrInfo;
-        char tuple[20];
+        //
+        // char tuple[30];
+        vector<unsigned char> tuple;
         // 如果是条 Insert 语句
         // TODO: 抛出一个不符合 Insert 语句的异常
         if (regex_match(sql, result, insertStatementPattern)) {
@@ -80,36 +84,45 @@ namespace badgerdb {
             vector<string> outcome;
             // 按 , 分割 tuple 插入信息，并保存至 outcome
             HeapFileManager::divideByChar(result[2], ',', outcome);
-            // tuple 的格式为 (tablename attr1value, attr2value, .....)
-            sprintf((char *)(&tuple), "%s %s,", tableName.c_str(), attrInfo.c_str());
             // 分割内部表示
             smatch result2;
-            vector<string> midResult;
+            // 创建游标
+            int flag = 0;
             for (int i = 0; i < outcome.size(); i++) {
                 if (regex_match(outcome[i], result2, charPattern)) {
                     std::cout << result2[1] << std::endl;
-                    midResult.emplace_back(result2[1]);
+                    if (schema.getAttrType(i) == VARCHAR) { // 在 VARCHAR 类型的情况下，大小补全至 4 的倍数
+                        vector<unsigned char> varcharTmp;
+                        insertStringIntoCharArray(varcharTmp, result2[1], roundUpSize(result2[1]));
+                        concatCharVector(tuple, varcharTmp);
+                    } else if (schema.getAttrType(i) == CHAR) {
+                        vector<unsigned char> charTmp;
+                        insertStringIntoCharArray(charTmp, result2[1], schema.getAttrMaxSize(i));
+                        concatCharVector(tuple, charTmp);
+                    } else {
+                        //TODO: 类型识别错误异常
+                    }
                 }
                 if (regex_match(outcome[i], result2, intPattern)) {
                     std::cout << result2[1] << std::endl;
-                    midResult.emplace_back(result2[1]);
+                    if (schema.getAttrType(i) == INT) {
+                        vector<unsigned char> intTmp;
+                        insertStringIntoCharArray(intTmp, result2[1], schema.getAttrMaxSize(i));
+                        concatCharVector(tuple, intTmp);
+                    } else {
+                        //TODO: 类型识别错误异常
+                    }
                 }
             }
-            /**
-            for (auto &s : outcome) {
-                if (regex_match(s, result2, charPattern)) {
-                    std::cout << result2[1] << std::endl;
-                    midResult.emplace_back(result2[1]);
-                }
-                if (regex_match(s, result2, intPattern)) {
-                    std::cout << result2[1] << std::endl;
-                    midResult.emplace_back(result2[1]);
-                }
-            }
-             **/
         }
-        cout << "TUPLE: " << tuple << endl;
-        return tuple;
+        char tupleOfCharType[tuple.size()];
+        convertVectorToArray(tuple, tupleOfCharType);
+        cout << "TUPLE: ";
+        for (char c: tupleOfCharType) {
+            cout << c;
+        }
+        cout << endl;
+        return tupleOfCharType;
     }
 
     void HeapFileManager::divideByChar(const string& str, char div, vector<string> &outcome) {
@@ -132,9 +145,35 @@ namespace badgerdb {
         return length / 4 * 4;
     }
 
-    int HeapFileManager::getSizeOfTuple(const Catalog *catalog, const string& name) {
-        TableId tableId = catalog->getTableId(name);
-        const TableSchema& schema = catalog->getTableSchema(tableId);
+    vector<unsigned char> HeapFileManager::intToBytes(int integer) {
+        vector<unsigned char> bytes(4);
+        for (int i = 0; i < 4; i++)
+            bytes[3 - i] = (integer >> (i * 8));
+        return bytes;
+    }
 
+    int HeapFileManager::bytesToInt(vector<unsigned char> bytes) {
+        int originalInt = bytes[0] << 24 | (int)bytes[1] << 16 | (int)bytes[2] << 8 | (int)bytes[3];
+        return originalInt;
+    }
+
+    void HeapFileManager::insertStringIntoCharArray(vector<unsigned char>& originalChar, const string& originalString, int size) {
+        for (int i = 0; i < size; i++) {
+            // 用 '?' 代替数据库中的 NULL
+            originalChar.emplace_back('?');
+        }
+        for (int i = 0; i < originalString.length(); i++) {
+            originalChar[i] = originalString[i];
+        }
+    }
+
+    void HeapFileManager::concatCharVector(vector<unsigned char>& a, vector<unsigned char>& b) {
+        a.insert(a.end(), b.begin(), b.end());
+    }
+
+    void HeapFileManager::convertVectorToArray(vector<unsigned char>& v, char array[]) {
+        for (int i = 0; i < v.size(); i++) {
+            array[i] = v[i];
+        }
     }
 }  // namespace badgerdb

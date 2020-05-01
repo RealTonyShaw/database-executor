@@ -58,5 +58,15 @@ class HeapFileManager {
    * @return size
    */
   int getSizeOfTuple(const Catalog *catalog, const string& name);
+
+  static vector<unsigned char> intToBytes(int paramInt);
+
+  static int bytesToInt(vector<unsigned char> bytes);
+
+  static void concatCharVector(vector<unsigned char> &a, vector<unsigned char> &b);
+
+  static void insertStringIntoCharArray(vector<unsigned char> &originalChar, const string &originalString, int size);
+
+    static void convertVectorToArray(vector<unsigned char> &v, char *array);
 };
 }  // namespace badgerdb
