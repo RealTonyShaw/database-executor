@@ -35,7 +35,6 @@ namespace badgerdb {
             fileOfLastTime = &file;
             assigned = false;
         }
-        // TODO: 检查需要如何填充是更换了 file 文件（一个想法：使用 filename）
         if (!assigned) {
             // bufMgr->allocPage(fileOfRDB, pid, page);
             bufMgr->allocPage(&file, pidOfLastTime, pageOfLastTime);
@@ -117,6 +116,7 @@ namespace badgerdb {
                 }
             }
         }
+        // 最后一位留作 '\0'
         char tupleOfCharType[tuple.size() + 1];
         convertVectorToArray(tuple, tupleOfCharType);
         // cout << "Tuple Content: " << string(tupleOfCharType) << endl;

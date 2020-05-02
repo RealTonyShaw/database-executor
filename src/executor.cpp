@@ -11,6 +11,8 @@
 #include <iostream>
 #include <ctime>
 #include <regex>
+#include <exceptions/invalid_record_exception.h>
+#include <exceptions/invalid_page_exception.h>
 
 #include "storage.h"
 #include "page_iterator.h"
@@ -23,35 +25,39 @@ namespace badgerdb {
     void TableScanner::print() const {
         // TODO: Printer the contents of the table
         std::cout << "Table Name: " << this->tableSchema.getTableName() << std::endl;
-        // std::cout << "Count: " << this->tableSchema.getAttrCount() << std::endl;
         std::cout << "File Name: " << this->tableFile.filename() << std::endl;
+        /**
         regex generalPattern(R"([ ]*(.*))", regex::icase);
         regex tuplePatter(R"((.*)[ ](.*))", regex::icase);
+         **/
+        // 打印属性
         for (int i = 0; i < this->tableSchema.getAttrCount(); i++) {
             std::cout << setw(10) << this->tableSchema.getAttrName(i);
         }
         std::cout << std::endl;
+        // TODO: 找到如何读取剩余 slot 数并切换 page 的方法
+
         File file = (File &) this->tableFile;
-        for (FileIterator iter = file.begin(); iter != file.end(); ++iter) {
-            for (PageIterator page_iter = (*iter).begin(); page_iter != (*iter).end(); ++page_iter) {
-//                std::cout << "Found record: " << *page_iter
-//                          << " on page " << (*iter).page_number() << "\n";
-                vector<string> attributes;
-                HeapFileManager::divideByChar(*page_iter, ',', attributes);
-                smatch result;
-                for (auto &s: attributes) {
-                    std::cout << s << std::endl;
-                    if (regex_match(s, result, tuplePatter)) {
-                        // std::cout << setw(10) << result[2];
-                        continue;
-                    }
-                    if (regex_match(s, result, generalPattern)) {
-                        // std::cout << setw(10) << result[1];
-                    }
+        Page *page;
+        PageId pid = 1;
+        for (int m = 1; m < 100; m++) {
+            pid = m;
+            try {
+                bufMgr->readPage(const_cast<File *>(&this->tableFile), pid, page);
+            } catch (InvalidPageException &) {
+                break;
+            }
+            cout << "NotHere";
+            for (int i = 1; i < 1000; i++) {
+                // TODO: 怎么判断已经没有 record 了？
+                try {
+                    std::cout << page->getRecord({1, static_cast<SlotId>(i)}).c_str();
+                    std::cout << std::endl;
+                } catch (InvalidRecordException &) {
+                    break;
                 }
             }
-            std::cout << std::endl;
-
+            bufMgr->unPinPage(&file, pid, false);
         }
     }
 
