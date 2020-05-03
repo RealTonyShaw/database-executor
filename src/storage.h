@@ -67,6 +67,12 @@ class HeapFileManager {
 
   static void insertStringIntoCharArray(vector<unsigned char> &originalChar, const string &originalString, int size);
 
+    // static void convertVectorToArray(vector<unsigned char> &v, char *array);
+
+
+    static void
+    insertCharArrayIntoCharArray(vector<unsigned char> &originalChar, vector<unsigned char> &toBeInserted, int size);
+
     static void convertVectorToArray(vector<unsigned char> &v, char *array);
 };
 }  // namespace badgerdb

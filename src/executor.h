@@ -179,6 +179,8 @@ class JoinOperator {
   static TableSchema createResultTableSchema(
       const TableSchema& leftTableSchema,
       const TableSchema& rightTableSchema);
+
+    static vector<string> tupleParser(string &tuple, TableSchema &tableSchema);
 };
 
 class OnePassJoinOperator : public JoinOperator {
@@ -272,8 +274,8 @@ class GraceHashJoinOperator : public JoinOperator {
   /**
    * Constructor
    */
-  GraceHashJoinOperator(const File& leftTableFile,
-                        const File& rightTableFile,
+  GraceHashJoinOperator(File& leftTableFile,
+                        File& rightTableFile,
                         const TableSchema& leftTableSchema,
                         const TableSchema& rightTableSchema,
                         const Catalog* catalog,

@@ -57,7 +57,10 @@ namespace badgerdb {
                                       File &file,
                                       BufMgr *bugMgr) {
         // TODO
-
+        Page* page;
+        bugMgr->readPage(&file, rid.page_number, page);
+        page->deleteRecord(rid);
+        bugMgr->unPinPage(&file, page->page_number(), true);
     }
 
     string HeapFileManager::createTupleFromSQLStatement(const string &sql,
@@ -72,6 +75,9 @@ namespace badgerdb {
         string tableName;
         string attrInfo;
         vector<unsigned char> tuple;
+        // TODO: header 加入 bitmap
+        vector<unsigned char> header = {'0', '0', '0', '0', '0', '0', '0', '0'};
+        concatCharVector(tuple, header);
         // 如果是条 Insert 语句
         // TODO: 抛出一个不符合 Insert 语句的异常
         if (regex_match(sql, result, insertStatementPattern)) {
@@ -94,7 +100,11 @@ namespace badgerdb {
                     std::cout << result2[1] << std::endl;
                     if (schema.getAttrType(i) == VARCHAR) { // 在 VARCHAR 类型的情况下，大小补全至 4 的倍数
                         vector<unsigned char> varcharTmp;
-                        insertStringIntoCharArray(varcharTmp, result2[1], roundUpSize(result2[1]));
+                        // result2[1] = result[1] + '^';
+                        string tmpResult = result2[1];
+                        tmpResult += '^';
+                        // insertStringIntoCharArray(varcharTmp, result2[1], roundUpSize(result2[1]));
+                        insertStringIntoCharArray(varcharTmp, tmpResult, roundUpSize(tmpResult));
                         concatCharVector(tuple, varcharTmp);
                     } else if (schema.getAttrType(i) == CHAR) {
                         vector<unsigned char> charTmp;
@@ -107,9 +117,18 @@ namespace badgerdb {
                 if (regex_match(outcome[i], result2, intPattern)) {
                     std::cout << result2[1] << std::endl;
                     if (schema.getAttrType(i) == INT) {
+                        // int intAttr = stoi(result2[i]);
                         vector<unsigned char> intTmp;
+                        // vector<unsigned char> attrOfByte = intToBytes(intAttr);
                         insertStringIntoCharArray(intTmp, result2[1], schema.getAttrMaxSize(i));
+                        // insertCharArrayIntoCharArray(intTmp, attrOfByte, schema.getAttrMaxSize(i));
                         concatCharVector(tuple, intTmp);
+                        // concatCharVector(tuple, attrOfByte);
+                        cout << "tuple: ";
+                        for (unsigned char t: tuple) {
+                            cout << t;
+                        }
+                        cout << endl;
                     } else {
                         //TODO: 类型识别错误异常
                     }
@@ -162,6 +181,16 @@ namespace badgerdb {
         }
         for (int i = 0; i < originalString.length(); i++) {
             originalChar[i] = originalString[i];
+        }
+    }
+
+    void HeapFileManager::insertCharArrayIntoCharArray(vector<unsigned char>& originalChar, vector<unsigned char>& toBeInserted, int size) {
+        for (int i = 0; i < size; i++) {
+            // 用 '?' 代替数据库中的 NULL
+            originalChar.emplace_back('?');
+        }
+        for (int i = 0; i < toBeInserted.size(); i++) {
+            originalChar[i] = toBeInserted[i];
         }
     }
 
