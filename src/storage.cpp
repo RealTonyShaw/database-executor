@@ -44,10 +44,12 @@ namespace badgerdb {
         RecordId rid{};
         try {
             rid = pageOfLastTime->insertRecord(tuple);
+            file.writePage(*pageOfLastTime);
         } catch (InsufficientSpaceException &) {
             bufMgr->allocPage(&file, pidOfLastTime, pageOfLastTime);
             totalPageNumber++;
             rid = pageOfLastTime->insertRecord(tuple);
+            file.writePage(*pageOfLastTime);
         }
         cout << "RID: " << (int &)rid.page_number << " " << (int &)rid.slot_number << " " << tuple << " File: " << file.filename() << endl;
         // bufMgr->unPinPage(fileOfRDB, pidOfLastTime, true);

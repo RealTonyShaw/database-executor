@@ -37,7 +37,7 @@ class TableScanner {
   BufMgr* bufMgr;
 
  public:
-  TableScanner(const File& tableFile,
+  TableScanner(File& tableFile,
                const TableSchema& tableSchema,
                BufMgr* bufMgr)
       : tableFile(tableFile), tableSchema(tableSchema), bufMgr(bufMgr) {
@@ -118,8 +118,8 @@ class JoinOperator {
   /**
    * Constructor
    */
-  JoinOperator(File* leftTableFile,
-               File* rightTableFile,
+  JoinOperator(File& leftTableFile,
+               File& rightTableFile,
                const TableSchema& leftTableSchema,
                const TableSchema& rightTableSchema,
                const Catalog* catalog,
@@ -195,8 +195,8 @@ class OnePassJoinOperator : public JoinOperator {
   /**
    * Constructor
    */
-  OnePassJoinOperator(File* leftTableFile,
-                      File* rightTableFile,
+  OnePassJoinOperator(File& leftTableFile,
+                      File& rightTableFile,
                       const TableSchema& leftTableSchema,
                       const TableSchema& rightTableSchema,
                       const Catalog* catalog,
@@ -230,8 +230,8 @@ class NestedLoopJoinOperator : public JoinOperator {
   /**
    * Constructor
    */
-  NestedLoopJoinOperator(File* leftTableFile,
-                         File* rightTableFile,
+  NestedLoopJoinOperator(File& leftTableFile,
+                         File& rightTableFile,
                          const TableSchema& leftTableSchema,
                          const TableSchema& rightTableSchema,
                          const Catalog* catalog,
@@ -281,8 +281,8 @@ class GraceHashJoinOperator : public JoinOperator {
   /**
    * Constructor
    */
-  GraceHashJoinOperator(File* leftTableFile,
-                        File* rightTableFile,
+  GraceHashJoinOperator(File& leftTableFile,
+                        File& rightTableFile,
                         const TableSchema& leftTableSchema,
                         const TableSchema& rightTableSchema,
                         const Catalog* catalog,

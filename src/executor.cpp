@@ -64,17 +64,18 @@ namespace badgerdb {
             // bufMgr->unPinPage(&file, pid, false);
             bufMgr->unPinPage(const_cast<File *>(&this->tableFile), pid, false);
         }
+
     }
 
     // 删除 leftTableFile 和 rightTableFile 的 const 修饰
-    JoinOperator::JoinOperator(File *leftTableFile,
-                               File *rightTableFile,
+    JoinOperator::JoinOperator(File &leftTableFile,
+                               File &rightTableFile,
                                const TableSchema &leftTableSchema,
                                const TableSchema &rightTableSchema,
                                const Catalog *catalog,
                                BufMgr *bufMgr)
-            : leftTableFile(*leftTableFile),
-              rightTableFile(*rightTableFile),
+            : leftTableFile(leftTableFile),
+              rightTableFile(rightTableFile),
               leftTableSchema(leftTableSchema),
               rightTableSchema(rightTableSchema),
               resultTableSchema(
@@ -154,9 +155,33 @@ namespace badgerdb {
         // 用于保存左表的 page
         Page *page;
         PageId pid = 1;
-        File file = this->leftTableFile;
+        // File file = this->leftTableFile;
         bufMgr->clearBufStats();
         // TODO: 加入对 left 和 right 表哪个更小的判断
+
+        // 外关系
+        File leftFile = this->leftTableFile;
+        for (FileIterator iter = leftFile.begin();
+             iter != leftFile.end();
+             ++iter) {
+            // 页查找结构
+            std::unordered_map<int, std::string> tmpMap;
+            // Iterate through all records on the page.
+            for (PageIterator page_iter = (*iter).begin();
+                 page_iter != (*iter).end();
+                 ++page_iter) {
+                std::cout << "Found record: " << *page_iter
+                          << " on page " << (*iter).page_number() << "\n";
+                string tmp = *page_iter;
+                vector<string> tmpVec = JoinOperator::tupleParser(tmp, const_cast<TableSchema &>(this->leftTableSchema));
+                attrContentParserForChar(tmpVec[1]);
+                int num = attrContentParserForInt(tmpVec[2]);
+                cout << "Left Table Content: " << "Char: " << tmpVec[1] << " " << "Int: " << num << endl;
+                tmpMap.insert(make_pair(num, tmpVec[1]));
+            }
+            hashMap.emplace_back(tmpMap);
+        }
+        /**
         for (int m = 1; m < 100; m++) {
             // 第一页查找结构
             std::unordered_map<int, std::string> tmpMap;
@@ -188,6 +213,21 @@ namespace badgerdb {
             // Unpin 读取过的页面
             bufMgr->unPinPage(const_cast<File *>(&this->leftTableFile), pid, false);
             // TODO: Clear bufMgr 的状态
+        }
+        **/
+
+        // 内关系
+        File rightFile = this->rightTableFile;
+        for (FileIterator iter = rightFile.begin();
+             iter != rightFile.end();
+             ++iter) {
+            // Iterate through all records on the page.
+            for (PageIterator page_iter = (*iter).begin();
+                 page_iter != (*iter).end();
+                 ++page_iter) {
+                std::cout << "Found record: " << *page_iter
+                          << " on page " << (*iter).page_number() << "\n";
+            }
         }
 
         isComplete = true;
