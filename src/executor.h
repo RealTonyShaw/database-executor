@@ -118,8 +118,8 @@ class JoinOperator {
   /**
    * Constructor
    */
-  JoinOperator(const File& leftTableFile,
-               const File& rightTableFile,
+  JoinOperator(File& leftTableFile,
+               File& rightTableFile,
                const TableSchema& leftTableSchema,
                const TableSchema& rightTableSchema,
                const Catalog* catalog,
@@ -188,8 +188,8 @@ class OnePassJoinOperator : public JoinOperator {
   /**
    * Constructor
    */
-  OnePassJoinOperator(const File& leftTableFile,
-                      const File& rightTableFile,
+  OnePassJoinOperator(File& leftTableFile,
+                      File& rightTableFile,
                       const TableSchema& leftTableSchema,
                       const TableSchema& rightTableSchema,
                       const Catalog* catalog,
@@ -223,8 +223,8 @@ class NestedLoopJoinOperator : public JoinOperator {
   /**
    * Constructor
    */
-  NestedLoopJoinOperator(const File& leftTableFile,
-                         const File& rightTableFile,
+  NestedLoopJoinOperator(File& leftTableFile,
+                         File& rightTableFile,
                          const TableSchema& leftTableSchema,
                          const TableSchema& rightTableSchema,
                          const Catalog* catalog,

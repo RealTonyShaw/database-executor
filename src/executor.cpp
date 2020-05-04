@@ -47,8 +47,8 @@ namespace badgerdb {
             for (int i = 1; i < 1000; i++) {
                 // TODO: 怎么判断已经没有 record 了？
                 try {
-                    std::cout << page->getRecord({1, static_cast<SlotId>(i)}).c_str();
-                    string tmp = page->getRecord({1, static_cast<SlotId>(i)}).c_str();
+                    std::cout << page->getRecord({static_cast<PageId>(m), static_cast<SlotId>(i)}).c_str();
+                    string tmp = page->getRecord({static_cast<PageId>(m), static_cast<SlotId>(i)}).c_str();
                     vector<string> tmpVec = JoinOperator::tupleParser(tmp, const_cast<TableSchema &>(this->tableSchema));
                     cout << "Parser Result: ";
                     for (string a: tmpVec) {
@@ -61,13 +61,14 @@ namespace badgerdb {
                 }
             }
             // Unpin 读取过的页面
-            bufMgr->unPinPage(&file, pid, false);
+            // bufMgr->unPinPage(&file, pid, false);
+            bufMgr->unPinPage(const_cast<File *>(&this->tableFile), pid, false);
         }
     }
 
     // 删除 leftTableFile 和 rightTableFile 的 const 修饰
-    JoinOperator::JoinOperator(const File &leftTableFile,
-                               const File &rightTableFile,
+    JoinOperator::JoinOperator(File &leftTableFile,
+                               File &rightTableFile,
                                const TableSchema &leftTableSchema,
                                const TableSchema &rightTableSchema,
                                const Catalog *catalog,
@@ -147,27 +148,42 @@ namespace badgerdb {
 
         // TODO: Execute the join algorithm
         cout << "Execute the join algorithm" << endl;
+        cout << "File Name: " << leftTableFile.filename() << endl;
         // 用于存储查找结构的数据结构
         std::unordered_map<int, std::string> hashMap;
         // 用于保存左表的 page
         Page *page;
         PageId pid = 1;
+        File file = this->leftTableFile;
         bufMgr->clearBufStats();
         // TODO: 加入对 left 和 right 表哪个更小的判断
+
+        /**
+        for (FileIterator iter = file.begin(); iter != file.end(); ++iter) {
+            // Iterate through all records on the page.
+            for (PageIterator page_iter = (*iter).begin(); page_iter != (*iter).end(); ++page_iter) {
+
+                std::cout << "Found record: " << *page_iter
+                          << " on page " << (*iter).page_number() << "\n";
+            }
+        }
+         **/
+
         for (int m = 1; m < 100; m++) {
             pid = m;
-            cout << "RUNNING HERE" << endl;
+            cout << "PID: " << pid << endl;
             try {
-                bufMgr->readPage(const_cast<File *>(&leftTableFile), pid, page);
-                cout << "PID: " << pid << endl;
+                bufMgr->readPage(const_cast<File *>(&this->leftTableFile), pid, page);
+                cout << "Free Space: " << page->getFreeSpace() << endl;
             } catch (InvalidPageException &) {
+                cout << "InvalidPageException" << endl;
                 break;
             }
             for (int i = 1; i < 1000; i++) {
                 // TODO: 怎么判断已经没有 record 了？
                 try {
-                    std::cout << page->getRecord({1, static_cast<SlotId>(i)}).c_str();
-                    string tmp = page->getRecord({1, static_cast<SlotId>(i)}).c_str();
+                    std::cout << page->getRecord({pid, static_cast<SlotId>(i)}).c_str();
+                    string tmp = page->getRecord({pid, static_cast<SlotId>(i)}).c_str();
                     vector<string> tmpVec = JoinOperator::tupleParser(tmp, const_cast<TableSchema &>(this->leftTableSchema));
                     cout << "Left Table Parser Result: ";
                     for (string a: tmpVec) {
@@ -176,6 +192,7 @@ namespace badgerdb {
                     cout << endl;
                     std::cout << std::endl;
                 } catch (InvalidRecordException &) {
+                    cout << "InvalidRecordException" << endl;
                     break;
                 }
             }
