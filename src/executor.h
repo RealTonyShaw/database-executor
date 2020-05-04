@@ -118,8 +118,8 @@ class JoinOperator {
   /**
    * Constructor
    */
-  JoinOperator(File& leftTableFile,
-               File& rightTableFile,
+  JoinOperator(File* leftTableFile,
+               File* rightTableFile,
                const TableSchema& leftTableSchema,
                const TableSchema& rightTableSchema,
                const Catalog* catalog,
@@ -181,6 +181,13 @@ class JoinOperator {
       const TableSchema& rightTableSchema);
 
     static vector<string> tupleParser(string &tuple, TableSchema &tableSchema);
+
+
+    static void attrContentParserForChar(string &attrContent);
+
+    static void attrContentParserForVarchar(string &attrContent);
+
+    static int attrContentParserForInt(string &attrContent);
 };
 
 class OnePassJoinOperator : public JoinOperator {
@@ -188,8 +195,8 @@ class OnePassJoinOperator : public JoinOperator {
   /**
    * Constructor
    */
-  OnePassJoinOperator(File& leftTableFile,
-                      File& rightTableFile,
+  OnePassJoinOperator(File* leftTableFile,
+                      File* rightTableFile,
                       const TableSchema& leftTableSchema,
                       const TableSchema& rightTableSchema,
                       const Catalog* catalog,
@@ -223,8 +230,8 @@ class NestedLoopJoinOperator : public JoinOperator {
   /**
    * Constructor
    */
-  NestedLoopJoinOperator(File& leftTableFile,
-                         File& rightTableFile,
+  NestedLoopJoinOperator(File* leftTableFile,
+                         File* rightTableFile,
                          const TableSchema& leftTableSchema,
                          const TableSchema& rightTableSchema,
                          const Catalog* catalog,
@@ -274,8 +281,8 @@ class GraceHashJoinOperator : public JoinOperator {
   /**
    * Constructor
    */
-  GraceHashJoinOperator(File& leftTableFile,
-                        File& rightTableFile,
+  GraceHashJoinOperator(File* leftTableFile,
+                        File* rightTableFile,
                         const TableSchema& leftTableSchema,
                         const TableSchema& rightTableSchema,
                         const Catalog* catalog,

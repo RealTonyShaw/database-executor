@@ -67,14 +67,14 @@ namespace badgerdb {
     }
 
     // 删除 leftTableFile 和 rightTableFile 的 const 修饰
-    JoinOperator::JoinOperator(File &leftTableFile,
-                               File &rightTableFile,
+    JoinOperator::JoinOperator(File *leftTableFile,
+                               File *rightTableFile,
                                const TableSchema &leftTableSchema,
                                const TableSchema &rightTableSchema,
                                const Catalog *catalog,
                                BufMgr *bufMgr)
-            : leftTableFile(leftTableFile),
-              rightTableFile(rightTableFile),
+            : leftTableFile(*leftTableFile),
+              rightTableFile(*rightTableFile),
               leftTableSchema(leftTableSchema),
               rightTableSchema(rightTableSchema),
               resultTableSchema(
@@ -149,32 +149,22 @@ namespace badgerdb {
         // TODO: Execute the join algorithm
         cout << "Execute the join algorithm" << endl;
         cout << "File Name: " << leftTableFile.filename() << endl;
-        // 用于存储查找结构的数据结构
-        std::unordered_map<int, std::string> hashMap;
+        // 用于存储查找结构的数据结构，hashMap 序列
+        vector<std::unordered_map<int, std::string>> hashMap;
         // 用于保存左表的 page
         Page *page;
         PageId pid = 1;
         File file = this->leftTableFile;
         bufMgr->clearBufStats();
         // TODO: 加入对 left 和 right 表哪个更小的判断
-
-        /**
-        for (FileIterator iter = file.begin(); iter != file.end(); ++iter) {
-            // Iterate through all records on the page.
-            for (PageIterator page_iter = (*iter).begin(); page_iter != (*iter).end(); ++page_iter) {
-
-                std::cout << "Found record: " << *page_iter
-                          << " on page " << (*iter).page_number() << "\n";
-            }
-        }
-         **/
-
         for (int m = 1; m < 100; m++) {
+            // 第一页查找结构
+            std::unordered_map<int, std::string> tmpMap;
             pid = m;
-            cout << "PID: " << pid << endl;
+            cout << "Inspect PID: " << pid << endl;
             try {
                 bufMgr->readPage(const_cast<File *>(&this->leftTableFile), pid, page);
-                cout << "Free Space: " << page->getFreeSpace() << endl;
+                cout << "Free Space of This Page: " << page->getFreeSpace() << endl;
             } catch (InvalidPageException &) {
                 cout << "InvalidPageException" << endl;
                 break;
@@ -182,22 +172,21 @@ namespace badgerdb {
             for (int i = 1; i < 1000; i++) {
                 // TODO: 怎么判断已经没有 record 了？
                 try {
-                    std::cout << page->getRecord({pid, static_cast<SlotId>(i)}).c_str();
                     string tmp = page->getRecord({pid, static_cast<SlotId>(i)}).c_str();
                     vector<string> tmpVec = JoinOperator::tupleParser(tmp, const_cast<TableSchema &>(this->leftTableSchema));
-                    cout << "Left Table Parser Result: ";
-                    for (string a: tmpVec) {
-                        cout << a << " ";
-                    }
-                    cout << endl;
-                    std::cout << std::endl;
+                    attrContentParserForChar(tmpVec[1]);
+                    int num = attrContentParserForInt(tmpVec[2]);
+                    cout << "Left Table Content: " << "Char: " << tmpVec[1] << " " << "Int: " << num << endl;
+                    // 将结果插入查找结构
+                    tmpMap.insert(make_pair(num, tmpVec[1]));
                 } catch (InvalidRecordException &) {
                     cout << "InvalidRecordException" << endl;
                     break;
                 }
             }
+            hashMap.emplace_back(tmpMap);
             // Unpin 读取过的页面
-            // bufMgr->unPinPage(const_cast<File *>(&this->leftTableFile), pid, false);
+            bufMgr->unPinPage(const_cast<File *>(&this->leftTableFile), pid, false);
             // TODO: Clear bufMgr 的状态
         }
 
@@ -236,6 +225,18 @@ namespace badgerdb {
 
         isComplete = true;
         return true;
+    }
+
+    void JoinOperator::attrContentParserForChar(string &attrContent) {
+        attrContent.substr(0, attrContent.find_first_of('?'));
+    }
+
+    void JoinOperator::attrContentParserForVarchar(string &attrContent) {
+        attrContent.substr(0, attrContent.find_first_of('^'));
+    }
+
+    int JoinOperator::attrContentParserForInt(string &attrContent) {
+        return stoi(attrContent.substr(0, attrContent.find_first_of('?')));
     }
 
     vector<string> JoinOperator::tupleParser(string &tuple, TableSchema &tableSchema) {
