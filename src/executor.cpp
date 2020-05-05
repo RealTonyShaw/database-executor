@@ -155,7 +155,6 @@ namespace badgerdb {
         // 用于保存左表的 page
         Page *page;
         PageId pid = 1;
-        // File file = this->leftTableFile;
         bufMgr->clearBufStats();
         // TODO: 加入对 left 和 right 表哪个更小的判断
 
@@ -170,8 +169,8 @@ namespace badgerdb {
             for (PageIterator page_iter = (*iter).begin();
                  page_iter != (*iter).end();
                  ++page_iter) {
-                std::cout << "Found record: " << *page_iter
-                          << " on page " << (*iter).page_number() << "\n";
+                // std::cout << "Found record: " << *page_iter
+                //          << " on page " << (*iter).page_number() << "\n";
                 string tmp = *page_iter;
                 vector<string> tmpVec = JoinOperator::tupleParser(tmp, const_cast<TableSchema &>(this->leftTableSchema));
                 attrContentParserForChar(tmpVec[1]);
@@ -179,42 +178,10 @@ namespace badgerdb {
                 cout << "Left Table Content: " << "Char: " << tmpVec[1] << " " << "Int: " << num << endl;
                 tmpMap.insert(make_pair(num, tmpVec[1]));
             }
+            cout << "Size: " << tmpMap.size() << endl;
             hashMap.emplace_back(tmpMap);
         }
-        /**
-        for (int m = 1; m < 100; m++) {
-            // 第一页查找结构
-            std::unordered_map<int, std::string> tmpMap;
-            pid = m;
-            cout << "Inspect PID: " << pid << endl;
-            try {
-                bufMgr->readPage(const_cast<File *>(&this->leftTableFile), pid, page);
-                cout << "Free Space of This Page: " << page->getFreeSpace() << endl;
-            } catch (InvalidPageException &) {
-                cout << "InvalidPageException" << endl;
-                break;
-            }
-            for (int i = 1; i < 1000; i++) {
-                // TODO: 怎么判断已经没有 record 了？
-                try {
-                    string tmp = page->getRecord({pid, static_cast<SlotId>(i)}).c_str();
-                    vector<string> tmpVec = JoinOperator::tupleParser(tmp, const_cast<TableSchema &>(this->leftTableSchema));
-                    attrContentParserForChar(tmpVec[1]);
-                    int num = attrContentParserForInt(tmpVec[2]);
-                    cout << "Left Table Content: " << "Char: " << tmpVec[1] << " " << "Int: " << num << endl;
-                    // 将结果插入查找结构
-                    tmpMap.insert(make_pair(num, tmpVec[1]));
-                } catch (InvalidRecordException &) {
-                    cout << "InvalidRecordException" << endl;
-                    break;
-                }
-            }
-            hashMap.emplace_back(tmpMap);
-            // Unpin 读取过的页面
-            bufMgr->unPinPage(const_cast<File *>(&this->leftTableFile), pid, false);
-            // TODO: Clear bufMgr 的状态
-        }
-        **/
+        cout << "File Name: " << rightTableFile.filename() << endl;
 
         // 内关系
         File rightFile = this->rightTableFile;
@@ -225,8 +192,21 @@ namespace badgerdb {
             for (PageIterator page_iter = (*iter).begin();
                  page_iter != (*iter).end();
                  ++page_iter) {
-                std::cout << "Found record: " << *page_iter
-                          << " on page " << (*iter).page_number() << "\n";
+                //std::cout << "Found record: " << *page_iter
+                //          << " on page " << (*iter).page_number() << "\n";
+                string tmp = *page_iter;
+                vector<string> tmpVec = JoinOperator::tupleParser(tmp, const_cast<TableSchema &>(this->rightTableSchema));
+                int num = attrContentParserForInt(tmpVec[1]);
+                attrContentParserForVarchar(tmpVec[2]);
+
+                for (std::unordered_map<int, std::string> map: hashMap) {
+                    std::unordered_map<int, std::string>::iterator it;
+                    if ((it = map.find(num)) != map.end()) {
+                        cout << "To Be Joined: " << num << " " << tmpVec[2] << " " << it->second << endl;
+                    }
+                }
+
+                cout << "Right Table Content: " << "Int: " << num << " " << "VerChar: " << tmpVec[2] << endl;
             }
         }
 
