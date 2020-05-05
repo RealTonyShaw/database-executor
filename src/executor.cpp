@@ -143,6 +143,9 @@ namespace badgerdb {
         if (isComplete)
             return true;
 
+        // 用于存储查询结果的数据结构
+        vector<string> onePassJoinResult;
+
         numResultTuples = 0;
         numUsedBufPages = 0;
         numIOs = 0;
@@ -164,11 +167,13 @@ namespace badgerdb {
              iter != leftFile.end();
              ++iter) {
             // 页查找结构
-            std::unordered_map<int, std::string> tmpMap;
+            // std::unordered_map<int, std::string> tmpMap;
             // Iterate through all records on the page.
             for (PageIterator page_iter = (*iter).begin();
                  page_iter != (*iter).end();
                  ++page_iter) {
+                // TODO: 修改存储结构（结构外提）
+                std::unordered_map<int, std::string> tmpMap;
                 // std::cout << "Found record: " << *page_iter
                 //          << " on page " << (*iter).page_number() << "\n";
                 string tmp = *page_iter;
@@ -177,9 +182,10 @@ namespace badgerdb {
                 int num = attrContentParserForInt(tmpVec[2]);
                 cout << "Left Table Content: " << "Char: " << tmpVec[1] << " " << "Int: " << num << endl;
                 tmpMap.insert(make_pair(num, tmpVec[1]));
+                hashMap.emplace_back(tmpMap);
             }
-            cout << "Size: " << tmpMap.size() << endl;
-            hashMap.emplace_back(tmpMap);
+            // cout << "Size: " << tmpMap.size() << endl;
+            // hashMap.emplace_back(tmpMap);
         }
         cout << "File Name: " << rightTableFile.filename() << endl;
 
@@ -203,13 +209,17 @@ namespace badgerdb {
                     std::unordered_map<int, std::string>::iterator it;
                     if ((it = map.find(num)) != map.end()) {
                         cout << "To Be Joined: " << num << " " << tmpVec[2] << " " << it->second << endl;
+                        onePassJoinResult.emplace_back(it->second + tmpVec[1] + tmpVec[2]);
                     }
                 }
-
+                // HeapFileManager::insertTuple("IDONTKNOW", resultFile, bufMgr);
                 cout << "Right Table Content: " << "Int: " << num << " " << "VerChar: " << tmpVec[2] << endl;
             }
         }
-
+        cout << "onePassJoinResult Size: " << onePassJoinResult.size() << endl;
+        for (string content: onePassJoinResult) {
+            HeapFileManager::insertTuple(content, resultFile, bufMgr);
+        }
         isComplete = true;
         return true;
     }
@@ -218,11 +228,81 @@ namespace badgerdb {
         if (isComplete)
             return true;
 
+        vector<string> onePassJoinResult;
+
         numResultTuples = 0;
         numUsedBufPages = 0;
         numIOs = 0;
 
         // TODO: Execute the join algorithm
+        // TODO: Execute the join algorithm
+        cout << "Execute the join algorithm" << endl;
+        cout << "File Name: " << leftTableFile.filename() << endl;
+        // 用于存储查找结构的数据结构，hashMap 序列
+        vector<std::unordered_map<int, std::string>> hashMap;
+        // 用于保存左表的 page
+        bufMgr->clearBufStats();
+        // TODO: 加入对 left 和 right 表哪个更小的判断
+
+        // 外关系
+        File leftFile = this->leftTableFile;
+        for (FileIterator iter = leftFile.begin();
+             iter != leftFile.end();
+             ++iter) {
+            // 页查找结构
+            // std::unordered_map<int, std::string> tmpMap;
+            // Iterate through all records on the page.
+            for (PageIterator page_iter = (*iter).begin();
+                 page_iter != (*iter).end();
+                 ++page_iter) {
+                // TODO: 修改存储结构（结构外提）
+                std::unordered_map<int, std::string> tmpMap;
+                // std::cout << "Found record: " << *page_iter
+                //          << " on page " << (*iter).page_number() << "\n";
+                string tmp = *page_iter;
+                vector<string> tmpVec = JoinOperator::tupleParser(tmp, const_cast<TableSchema &>(this->leftTableSchema));
+                attrContentParserForChar(tmpVec[1]);
+                int num = attrContentParserForInt(tmpVec[2]);
+                cout << "Left Table Content: " << "Char: " << tmpVec[1] << " " << "Int: " << num << endl;
+                tmpMap.insert(make_pair(num, tmpVec[1]));
+                hashMap.emplace_back(tmpMap);
+            }
+            // cout << "Size: " << tmpMap.size() << endl;
+            // hashMap.emplace_back(tmpMap);
+        }
+        cout << "File Name: " << rightTableFile.filename() << endl;
+
+        // 内关系
+        File rightFile = this->rightTableFile;
+        for (FileIterator iter = rightFile.begin();
+             iter != rightFile.end();
+             ++iter) {
+            // Iterate through all records on the page.
+            for (PageIterator page_iter = (*iter).begin();
+                 page_iter != (*iter).end();
+                 ++page_iter) {
+                //std::cout << "Found record: " << *page_iter
+                //          << " on page " << (*iter).page_number() << "\n";
+                string tmp = *page_iter;
+                vector<string> tmpVec = JoinOperator::tupleParser(tmp, const_cast<TableSchema &>(this->rightTableSchema));
+                int num = attrContentParserForInt(tmpVec[1]);
+                attrContentParserForVarchar(tmpVec[2]);
+
+                for (std::unordered_map<int, std::string> map: hashMap) {
+                    std::unordered_map<int, std::string>::iterator it;
+                    if ((it = map.find(num)) != map.end()) {
+                        cout << "To Be Joined: " << num << " " << tmpVec[2] << " " << it->second << endl;
+                        onePassJoinResult.emplace_back(it->second + tmpVec[1] + tmpVec[2]);
+                    }
+                }
+                cout << "Right Table Content: " << "Int: " << num << " " << "VerChar: " << tmpVec[2] << endl;
+            }
+        }
+        cout << "onePassJoinResult Size: " << onePassJoinResult.size() << endl;
+        for (string content: onePassJoinResult) {
+            
+            HeapFileManager::insertTuple(content, resultFile, bufMgr);
+        }
 
         isComplete = true;
         return true;

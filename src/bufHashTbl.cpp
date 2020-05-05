@@ -19,6 +19,8 @@ int BufHashTbl::hash(const File* file, const PageId pageNo)
 {
   int tmp, value;
   tmp = (long)file;  // cast of pointer to the file object to an integer
+  std::hash<std::string> hasher;
+  tmp=hasher(file->filename());
   value = (tmp + pageNo) % HTSIZE;
   return value;
 }
